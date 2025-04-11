@@ -1,6 +1,6 @@
 import { Resolver, Query, Args, Int } from '@nestjs/graphql';
-import { UserService } from './user.service';
-import { UserType } from './user.type'; // definimos un objeto de tipo GraphQL
+import { UserService } from '../../application/services/user.service';
+import { UserType } from './user.type';
 
 @Resolver(() => UserType)
 export class UserResolver {
