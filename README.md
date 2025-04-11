@@ -4,25 +4,25 @@
   </a>
 </p>
 
-#  GraphQL con NestJS, Prisma y MySQL
+# GraphQL API Template with NestJS, Prisma, and MySQL
 
-Este proyecto muestra cómo crear una API GraphQL con NestJS y Prisma, conectada a una base de datos MySQL. Además, se incluye configuración con Docker para la base de datos y un ejemplo de `seed` de datos.
-
----
-
-## Requisitos Previos
-
-- [Node.js](https://nodejs.org/en/) (versión recomendada LTS, 16+)
-- [Nest CLI](https://docs.nestjs.com/cli/overview) (opcional para scaffolding rápido)
-- [Docker y Docker Compose](https://docs.docker.com/compose/) (para la base de datos MySQL)
-- [MySQL Workbench](https://www.mysql.com/products/workbench/) u otra herramienta (opcional, para administrar la DB gráficamente)
+This project is a boilerplate to build a GraphQL API using NestJS and Prisma, connected to a MySQL database. It includes a Docker setup for the database and an example `seed` script for initial data population.
 
 ---
 
-## Estructura de Carpetas (Ejemplo)
+## Prerequisites
+
+- [Node.js](https://nodejs.org/en/) (recommended LTS version, 16+)
+- [Nest CLI](https://docs.nestjs.com/cli/overview) (optional, for quick scaffolding)
+- [Docker and Docker Compose](https://docs.docker.com/compose/) (for the MySQL database)
+- [MySQL Workbench](https://www.mysql.com/products/workbench/) or any other DB GUI tool (optional)
+
+---
+
+## Folder Structure (Example)
 
 ```
-graphql-template
+graphql-api-template
 ├── docker-compose.yml
 ├── .env
 ├── package.json
@@ -43,19 +43,19 @@ graphql-template
 
 ---
 
-## Variables de Entorno
+## Environment Variables
 
-En la raíz del proyecto, debes tener un archivo `.env` con la URL de conexión a tu base de datos. Por ejemplo:
+In the root directory, create a `.env` file with your database connection URL, for example:
 
 ```bash
-DATABASE_URL="mysql://root:@localhost:3306/name-db"
+DATABASE_URL="mysql://root:@localhost:3306/graphql-db"
 ```
 
 ---
 
-## Configuración de Base de Datos con Docker
+## Docker Database Setup
 
-En este proyecto se usa Docker para crear una instancia de MySQL localmente:
+Docker is used to create a local MySQL instance:
 
 **docker-compose.yml**
 ```yaml
@@ -63,11 +63,11 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: name_mysql
+    container_name: graphql_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: name-db
+      MYSQL_DATABASE: graphql-db
       MYSQL_USER: root
       MYSQL_PASSWORD: ""
     ports:
@@ -79,13 +79,13 @@ volumes:
   db_data:
 ```
 
-Para iniciar la base de datos:
+Start the database:
 
 ```bash
 docker-compose up -d
 ```
 
-Para detener y eliminar los contenedores:
+Stop and remove the containers:
 
 ```bash
 docker-compose down
@@ -93,9 +93,9 @@ docker-compose down
 
 ---
 
-## Configuración de Prisma
+## Prisma Setup
 
-### 1. Definir el Esquema en prisma/schema.prisma
+### 1. Define the schema in prisma/schema.prisma
 
 ```prisma
 datasource db {
@@ -116,19 +116,19 @@ model User {
 }
 ```
 
-### 2. Migrar la Base de Datos
+### 2. Run Database Migration
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-### 3. Generar el Cliente Prisma
+### 3. Generate Prisma Client
 
 ```bash
 npx prisma generate
 ```
 
-### 4. Insertar Datos Iniciales (Seed)
+### 4. Seed Initial Data
 
 **prisma/seed.ts**
 ```ts
@@ -154,7 +154,7 @@ main()
   });
 ```
 
-Ejecutar seed:
+Run the seed:
 
 ```bash
 npx ts-node prisma/seed.ts
@@ -170,7 +170,7 @@ npm install
 
 ---
 
-## Compile and Run
+## Run the Project
 
 ```bash
 # development
@@ -183,15 +183,15 @@ npm run start:dev
 npm run start:prod
 ```
 
-La aplicación se levantará en `http://localhost:3000`.
+The app will be running at `http://localhost:3000`.
 
 ---
 
 ## GraphQL Playground
 
-Navega a `http://localhost:3000/graphql`.
+Go to `http://localhost:3000/graphql`.
 
-### Ejemplo de Query
+### Example Query
 
 ```graphql
 query {
@@ -205,7 +205,7 @@ query {
 }
 ```
 
-### Consultar un usuario específico
+### Get a Specific User
 
 ```graphql
 query {
@@ -245,9 +245,6 @@ mau deploy
 
 ---
 
-## Notas Finales
-Asegúrate de personalizar la configuración de DATABASE_URL y credenciales en .env según tu entorno.
+## Final Notes
 
-Para entornos de producción, se recomienda no exponer contraseñas o credenciales directamente en el repositorio; utiliza secretos o servicios de gestión de configuraciones.
-
-Si deseas contenerizar también la aplicación NestJS, puedes crear un Dockerfile adicional y ampliar tu docker-compose.yml para manejar ambos servicios (API y DB) de forma unificada.
+Make sure to customize the `.env` configuration and never commit sensitive credentials. For production, use secret management tools and containerize the API if needed alongside the DB.
