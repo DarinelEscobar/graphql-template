@@ -98,22 +98,47 @@ docker-compose down
 ### 1. Define the schema in prisma/schema.prisma
 
 ```prisma
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+
+async function main() {
+  const user = await prisma.user.create({
+    data: {
+      name: 'Juan Pérez',
+      email: 'sample@user',
+      password: '123', //Hash me
+      rol: 'USER',
+    },
+  })
+
+  const admin = await prisma.user.create({
+    data: {
+      name: 'María Cocina',
+      email: 'sample@admin',
+      password: '1234', //Hash me
+      rol: 'ADMIN',
+    },
+  })
+
+  await prisma.product.createMany({
+    data: [
+      { name: 'Taco Supremo', userId: user.id },
+      { name: 'Burrito Deluxe', userId: user.id },
+      { name: 'Paella Gourmet', userId: admin.id },
+      { name: 'Sopa Azteca', userId: admin.id },
+    ],
+  })
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 ```
 
 ### 2. Run Database Migration
@@ -132,26 +157,47 @@ npx prisma generate
 
 **prisma/seed.ts**
 ```ts
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
 
 async function main() {
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name: 'Juan Pérez',
-      email: 'juan@example.com',
+      email: 'sample@user',
+      password: '123', //Hash me
+      rol: 'USER',
     },
-  });
+  })
+
+  const admin = await prisma.user.create({
+    data: {
+      name: 'María Cocina',
+      email: 'sample@admin',
+      password: '1234', //Hash me
+      rol: 'ADMIN',
+    },
+  })
+
+  await prisma.product.createMany({
+    data: [
+      { name: 'Taco Supremo', userId: user.id },
+      { name: 'Burrito Deluxe', userId: user.id },
+      { name: 'Paella Gourmet', userId: admin.id },
+      { name: 'Sopa Azteca', userId: admin.id },
+    ],
+  })
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })
+
 ```
 
 Run the seed:
@@ -186,12 +232,43 @@ npm run start:prod
 The app will be running at `http://localhost:3000`.
 
 ---
-
 ## GraphQL Playground
 
 Go to `http://localhost:3000/graphql`.
 
-### Example Query
+---
+
+### 🔐 Authentication – Login Mutation
+
+Use this mutation to log in and get your JWT token:
+
+```graphql
+mutation {
+  login(email: "chef@example.com", password: "simplepassword")
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "login": "TOKEN..."
+  }
+}
+```
+
+Once you get the token, add it in the HTTP Headers (bottom-left of the Playground):
+
+```json
+{
+  "Authorization": "Bearer <your_token_here>"
+}
+```
+
+---
+
+### 👤 Example Query – All Users
 
 ```graphql
 query {
@@ -205,7 +282,9 @@ query {
 }
 ```
 
-### Get a Specific User
+---
+
+### 👤 Get a Specific User
 
 ```graphql
 query {
@@ -219,6 +298,39 @@ query {
 }
 ```
 
+---
+
+### 🍳 Get All Products (role: ADMIN required)
+
+```graphql
+query {
+  products {
+    id
+    name
+    userId
+    createdAt
+    updatedAt
+  }
+}
+```
+
+---
+
+### 🧑‍🌾 Get Products by User (role: USER or ADMIN)
+
+```graphql
+query {
+  productsByUser(userId: 1) {
+    id
+    name
+    userId
+    createdAt
+    updatedAt
+  }
+}
+```
+
+> ⚠️ `products` and `productsByUser` require an `Authorization` header with a valid token. Don’t even try without it.
 ---
 
 ## Run Tests
