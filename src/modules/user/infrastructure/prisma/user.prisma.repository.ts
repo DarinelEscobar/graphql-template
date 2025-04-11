@@ -15,6 +15,8 @@ export class PrismaUserRepository implements UserRepository {
       data.id,
       data.name,
       data.email,
+      data.password,
+      data.rol,
       data.createdAt,
       data.updatedAt,
     );
@@ -28,9 +30,26 @@ export class PrismaUserRepository implements UserRepository {
           data.id,
           data.name,
           data.email,
+          data.password,
+          data.rol,
           data.createdAt,
           data.updatedAt,
         ),
+    );
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const data = await this.prisma.user.findUnique({ where: { email } });
+    if (!data) return null;
+
+    return new User(
+      data.id,
+      data.name,
+      data.email,
+      data.password,
+      data.rol,
+      data.createdAt,
+      data.updatedAt,
     );
   }
 }

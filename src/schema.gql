@@ -29,3 +29,7 @@ type Query {
   products: [ProductType!]!
   productsByUser(userId: Int!): [ProductType!]!
 }
+
+type Mutation {
+  login(email: String!, password: String!): String!
+}
