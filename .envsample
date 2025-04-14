@@ -1,0 +1,5 @@
+DATABASE_URL="mysql://root:<Password>@localhost:3306/graphql-db"
+JWT_SECRET=MY_SUPER_SECRET
+
+//ADD false on production
+GRAPHQL_PLAYGROUND=true
