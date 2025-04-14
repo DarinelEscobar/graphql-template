@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
-import { UserResolver } from './adapters/graphql/user.resolver';
-import { UserService } from './application/services/user.service';
-import { PrismaUserRepository } from './infrastructure/prisma/user.prisma.repository';
+import { Module } from '@nestjs/common'
+import { UserResolver } from './adapters/graphql/user.resolver'
+import { UserService } from './application/services/user.service'
+import { PrismaUserRepository } from './infrastructure/prisma/user.prisma.repository'
+import { BcryptPasswordHasherService } from './domain/services/bcrypt-password-hasher.service'
 
 @Module({
   providers: [
@@ -9,15 +10,23 @@ import { PrismaUserRepository } from './infrastructure/prisma/user.prisma.reposi
     UserService,
     {
       provide: 'UserRepository',
-      useClass: PrismaUserRepository,
+      useClass: PrismaUserRepository
     },
+    {
+      provide: 'PasswordHasher',
+      useClass: BcryptPasswordHasherService
+    }
   ],
   exports: [
     UserService,
     {
       provide: 'UserRepository',
-      useClass: PrismaUserRepository,
+      useClass: PrismaUserRepository
     },
-  ],
+    {
+      provide: 'PasswordHasher',
+      useClass: BcryptPasswordHasherService
+    }
+  ]
 })
 export class UserModule {}

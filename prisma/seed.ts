@@ -1,22 +1,26 @@
 import { PrismaClient } from '@prisma/client'
+import * as bcrypt from 'bcryptjs'
+
 const prisma = new PrismaClient()
 
 async function main() {
+  const salt = await bcrypt.genSalt(10)
+
   const user = await prisma.user.create({
     data: {
       name: 'Juan Pérez',
-      email: 'sample@user',
-      password: '123', //Hash me
+      email: 's@user.com',
+      password: await bcrypt.hash('12', salt),
       rol: 'USER',
     },
   })
 
-  const admin = await prisma.user.create({
+  const chef = await prisma.user.create({
     data: {
       name: 'María Cocina',
-      email: 'sample@admin',
-      password: '1234', //Hash me
-      rol: 'ADMIN',
+      email: 's@chef.com',
+      password: await bcrypt.hash('12', salt),
+      rol: 'CHEF',
     },
   })
 
@@ -24,8 +28,8 @@ async function main() {
     data: [
       { name: 'Taco Supremo', userId: user.id },
       { name: 'Burrito Deluxe', userId: user.id },
-      { name: 'Paella Gourmet', userId: admin.id },
-      { name: 'Sopa Azteca', userId: admin.id },
+      { name: 'Paella Gourmet', userId: chef.id },
+      { name: 'Sopa Azteca', userId: chef.id },
     ],
   })
 }

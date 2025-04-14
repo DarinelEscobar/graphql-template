@@ -23,6 +23,13 @@ type ProductType {
   updatedAt: DateTime!
 }
 
+type AuthPayload {
+  accessToken: String!
+  userId: Int!
+  rol: String!
+  refreshToken: String!
+}
+
 type Query {
   user(id: Int!): UserType!
   users: [UserType!]!
@@ -31,5 +38,18 @@ type Query {
 }
 
 type Mutation {
-  login(email: String!, password: String!): String!
+  login(data: LoginInput!): AuthPayload!
+  createAccount(data: CreateAccountInput!): AuthPayload!
+  refreshToken(refreshToken: String!): AuthPayload!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input CreateAccountInput {
+  name: String!
+  email: String!
+  password: String!
 }
