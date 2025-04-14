@@ -10,6 +10,20 @@ This project is a boilerplate to build a GraphQL API using NestJS and Prisma, co
 
 ---
 
+
+## 🔥 Features (Updated)
+
+- ✅ JWT Authentication (Access + Refresh Tokens)
+- ✅ Role-Based Access Control using `@Roles` decorator and `RolesGuard`
+- ✅ Create Account and Login mutations with secure password hashing (bcrypt)
+- ✅ Refresh Token Mutation
+- ✅ Public GraphQL Queries: `users`, `user(id)`
+- ✅ Protected Queries:
+  - `products`: Requires `CHEF` role
+  - `productsByUser`: Requires `USER` or `CHEF` role
+- ✅ Global Rate Limiting via Throttler (custom `GqlThrottlerGuard`)
+
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/en/) (recommended LTS version, 16+)
@@ -53,91 +67,47 @@ DATABASE_URL="mysql://root:@localhost:3306/graphql-db"
 
 ---
 
-## Docker Database Setup
 
-Docker is used to create a local MySQL instance:
 
-**docker-compose.yml**
-```yaml
-version: '3.8'
-services:
-  db:
-    image: mysql:8.0
-    container_name: graphql_mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: graphql-db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: ""
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:
-```
-
-Start the database:
-
-```bash
-docker-compose up -d
-```
-
-Stop and remove the containers:
-
-```bash
-docker-compose down
-```
-
----
 
 ## Prisma Setup
 
 ### 1. Define the schema in prisma/schema.prisma
 
-```prisma
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+```prisma 
 
-async function main() {
-  const user = await prisma.user.create({
-    data: {
-      name: 'Juan Pérez',
-      email: 'sample@user',
-      password: '123', //Hash me
-      rol: 'USER',
-    },
-  })
-
-  const admin = await prisma.user.create({
-    data: {
-      name: 'María Cocina',
-      email: 'sample@admin',
-      password: '1234', //Hash me
-      rol: 'ADMIN',
-    },
-  })
-
-  await prisma.product.createMany({
-    data: [
-      { name: 'Taco Supremo', userId: user.id },
-      { name: 'Burrito Deluxe', userId: user.id },
-      { name: 'Paella Gourmet', userId: admin.id },
-      { name: 'Sopa Azteca', userId: admin.id },
-    ],
-  })
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  rol       String   @default("USER")  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+
 
 ```
 
@@ -158,24 +128,28 @@ npx prisma generate
 **prisma/seed.ts**
 ```ts
 import { PrismaClient } from '@prisma/client'
+import * as bcrypt from 'bcryptjs'
+
 const prisma = new PrismaClient()
 
 async function main() {
+  const salt = await bcrypt.genSalt(10)
+
   const user = await prisma.user.create({
     data: {
       name: 'Juan Pérez',
-      email: 'sample@user',
-      password: '123', //Hash me
+      email: 's@user.com',
+      password: await bcrypt.hash('12', salt),
       rol: 'USER',
     },
   })
 
-  const admin = await prisma.user.create({
+  const chef = await prisma.user.create({
     data: {
       name: 'María Cocina',
-      email: 'sample@admin',
-      password: '1234', //Hash me
-      rol: 'ADMIN',
+      email: 's@chef.com',
+      password: await bcrypt.hash('12', salt),
+      rol: 'CHEF',
     },
   })
 
@@ -183,8 +157,8 @@ async function main() {
     data: [
       { name: 'Taco Supremo', userId: user.id },
       { name: 'Burrito Deluxe', userId: user.id },
-      { name: 'Paella Gourmet', userId: admin.id },
-      { name: 'Sopa Azteca', userId: admin.id },
+      { name: 'Paella Gourmet', userId: chef.id },
+      { name: 'Sopa Azteca', userId: chef.id },
     ],
   })
 }
@@ -238,99 +212,63 @@ Go to `http://localhost:3000/graphql`.
 
 ---
 
-### 🔐 Authentication – Login Mutation
+## Example Auth Mutations
 
-Use this mutation to log in and get your JWT token:
+### 🚀 Create Account
 
 ```graphql
 mutation {
-  login(email: "chef@example.com", password: "simplepassword")
+  createAccount(data: { name: "Juan", email: "juan@example.com", password: "1234" }) {
+    accessToken
+    userId
+    rol
+    refreshToken
+  }
 }
 ```
 
-Response:
+### 🔐 Login
 
+```graphql
+mutation {
+  login(data: { email: "juan@example.com", password: "1234" }) {
+    accessToken
+    userId
+    rol
+    refreshToken
+  }
+}
+```
+
+### 🔄 Refresh Token
+
+```graphql
+mutation {
+  refreshToken(refreshToken: "yourRefreshTokenHere") {
+    accessToken
+    userId
+    rol
+    refreshToken
+  }
+}
+```
+
+## Role-based GraphQL Query Protection
+
+| Query              | Roles Required | Description                         |
+|-------------------|----------------|-------------------------------------|
+| `users`           | ❌ Public      | Get all users                       |
+| `user(id)`        | ❌ Public      | Get user by ID                      |
+| `products`        | ✅ CHEF only   | Get all products                    |
+| `productsByUser`  | ✅ USER, CHEF  | Get products by user ID             |
+
+> ⚠️ `products` and `productsByUser` require an `Authorization` header with a valid token. Don’t even try without it:
 ```json
 {
-  "data": {
-    "login": "TOKEN..."
-  }
+  "Authorization": "Bearer YOUR_ACCESS_TOKEN"
 }
 ```
 
-Once you get the token, add it in the HTTP Headers (bottom-left of the Playground):
-
-```json
-{
-  "Authorization": "Bearer <your_token_here>"
-}
-```
-
----
-
-### 👤 Example Query – All Users
-
-```graphql
-query {
-  users {
-    id
-    name
-    email
-    createdAt
-    updatedAt
-  }
-}
-```
-
----
-
-### 👤 Get a Specific User
-
-```graphql
-query {
-  user(id: 1) {
-    id
-    name
-    email
-    createdAt
-    updatedAt
-  }
-}
-```
-
----
-
-### 🍳 Get All Products (role: ADMIN required)
-
-```graphql
-query {
-  products {
-    id
-    name
-    userId
-    createdAt
-    updatedAt
-  }
-}
-```
-
----
-
-### 🧑‍🌾 Get Products by User (role: USER or ADMIN)
-
-```graphql
-query {
-  productsByUser(userId: 1) {
-    id
-    name
-    userId
-    createdAt
-    updatedAt
-  }
-}
-```
-
-> ⚠️ `products` and `productsByUser` require an `Authorization` header with a valid token. Don’t even try without it.
 ---
 
 ## Run Tests
